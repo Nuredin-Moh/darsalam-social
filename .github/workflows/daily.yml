@@ -1,0 +1,38 @@
+name: Dar Salam social quotidien (IG + FB)
+
+on:
+  schedule:
+    - cron: '7 16,17,19 * * *'   # 3 tentatives/jour (~18h07, 19h07, 21h07 heure suisse d'ete) - resiste aux retards GitHub
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "1 = verifier l'acces sans publier"
+        default: "1"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Publier la publication du jour (Instagram + Facebook)
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || '' }}
+        run: python publish_daily.py
+      - name: Enregistrer l'etat (anti-doublon)
+        run: |
+          if [[ -n "$(git status --porcelain last.json)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add last.json
+            git commit -m "etat: publie le $(TZ=Europe/Zurich date +%F)"
+            git push
+          fi
