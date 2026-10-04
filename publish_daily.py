@@ -112,6 +112,16 @@ else:
             if err: errors.append("FB feed: " + err); print("FB ERREUR feed:", err)
             else: state["fb"] = today; print("FB publie:", r)
 
+# ---------- STORY FACEBOOK (regle : toujours partager en story ; best effort, non bloquant) ----------
+if FB_PAGE and state.get("fb") == today and state.get("fb_story") != today:
+    r, err = api_post(f"{FB_PAGE}/photos", {"url": imgs[0], "published": "false"})
+    if err:
+        print("FB story: upload impossible:", err)
+    else:
+        r2, err2 = api_post(f"{FB_PAGE}/photo_stories", {"photo_id": r["id"]})
+        if err2: print("FB story: echec:", err2)
+        else: state["fb_story"] = today; print("FB story publiee:", r2)
+
 json.dump(state, open("last.json", "w"))
 if errors:
     raise SystemExit("Echecs: " + " | ".join(errors))
