@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 TOKEN   = os.environ["IG_TOKEN"]            # page access token permanent (sert IG + FB)
 IG_ID   = os.environ["IG_USER_ID"]          # instagram business account id
 FB_PAGE = os.environ.get("FB_PAGE_ID", "")  # page facebook id
-DRY     = os.environ.get("DRY_RUN", "") == "1"  # 1 = vérifie l'accès sans rien publier
+DRY     = os.environ.get("DRY_RUN", "") in ("1", "2")  # 1 = acces ; 2 = acces + conteneur IG test, sans publier
 V = "v21.0"
 BASE = f"https://graph.facebook.com/{V}/"
 
@@ -30,7 +30,19 @@ def api_get(path, params):
 if DRY:
     r, e = api_get(IG_ID, {"fields": "username"}); print("IG:", r or e)
     r, e = api_get(FB_PAGE, {"fields": "name"}); print("FB:", r or e)
-    raise SystemExit(0 if r else 1)
+    if os.environ.get("DRY_RUN") == "1" or not r:
+        raise SystemExit(0 if r else 1)
+if os.environ.get("DRY_RUN") == "2":
+    # test : cree un conteneur Instagram (sans le publier) avec la 1re image du planning
+    first = json.load(open("schedule.json", encoding="utf-8"))[0]["images"][0]
+    r, e = api_post(f"{IG_ID}/media", {"image_url": first, "is_carousel_item": "true"})
+    print("Conteneur test:", r or e)
+    if r:
+        for _ in range(12):
+            st, _e = api_get(r["id"], {"fields": "status_code"}); print("statut:", st)
+            if (st or {}).get("status_code") in ("FINISHED", "ERROR"): break
+            time.sleep(5)
+    raise SystemExit(0)
 
 try:
     from zoneinfo import ZoneInfo
