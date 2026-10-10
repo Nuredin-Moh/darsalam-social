@@ -2,7 +2,7 @@ name: Dar Salam social quotidien (IG + FB)
 
 on:
   schedule:
-    - cron: '7 16,17,19 * * *'   # 3 tentatives/jour (~18h07, 19h07, 21h07 heure suisse d'ete) - resiste aux retards GitHub
+    - cron: '7 15,16,17,18 * * *'   # 4 tentatives/jour : GitHub retarde souvent de 1 a 4 h ; anti-doublon via last.json
   workflow_dispatch:
     inputs:
       dry_run:
